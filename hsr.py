@@ -4,7 +4,7 @@ import numpy
 import networkx as nx
 import matplotlib.pyplot as plt
 import json
-
+  
 def hsrNK(rungs,questions):
   if rungs == 1:
     return 0
