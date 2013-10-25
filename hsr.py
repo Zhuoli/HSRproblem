@@ -3,6 +3,8 @@ import math
 import numpy 
 import networkx as nx
 import matplotlib.pyplot as plt
+import json
+
 def hsrNK(rungs,questions):
   if rungs == 1:
     return 0
@@ -19,6 +21,39 @@ def hsrKQ(jars,questions):
   if jars == 0 or questions == 0:
     return 0
   return 1 + hsrKQ(jars - 1, questions - 1) + hsrKQ(jars, questions-1)
+# calculate the minimum question may be asked for rung q, kars k
+def MinT(n,k):
+  s = numpy.zeros((n+1,k+1),dtype = numpy.int8)
+  m = numpy.zeros((n+1,k+1),dtype = numpy.int8)
+  if n ==0 or k == 0:
+    return 0,s
+  if k == 1:
+    for i in range(1,n+1):
+      s[i,1]=1
+    return n,s
+  for i in range(1,n+1):
+    m[i,1] = i
+    s[i,1] = 1
+  for i in range(1,n+1):
+    for j in range(2,k+1):
+      m[i,j] = sys.maxint
+      for a in range(1,i+1):
+        q = 1 + max(m[a-1,j-1],m[i-a,j])
+        if q < m[i,j]:
+          m[i,j] = q
+          s[i,j] = a
+  return int(m[i,j]),s
+
+def trace(n,k,s,start):
+  if k <= 0 or n <= 0:
+    return json.dumps({'h' : start})
+  a = int(s[n,k]) + start 
+  return json.dumps([a,json.loads(trace(a-1,k-1,s,start)),json.loads(trace(n-a,k,s,a))])
+
+def jsonTrace(n,k,s):
+  return '{\"decision_tree\" : ' + trace(n,k,s,0) +'}'
+
+
 
 #Build the highest rungs tree given jars and questions
 def HSRkqStruct(jars,questions):
@@ -26,11 +61,11 @@ def HSRkqStruct(jars,questions):
   return HSRkqStructHelper(jars,questions,0,(maxs-1))
 def HSRkqStructHelper(jars, questions,starts,ends):
   if jars ==0 or questions == 0 or starts >= ends:
-    return ['L' + str(ends),[],[]]
+    return ['H' + str(starts),[],[]]
   leftsize = sumBino(jars - 1,questions - 1);
   rightsize = sumBino(jars,questions-1)
-  r = HSRkqStructHelper(jars,questions - 1,starts + leftsize,ends)
   l = HSRkqStructHelper(jars - 1, questions - 1,starts,starts + leftsize -1)
+  r = HSRkqStructHelper(jars,questions - 1,starts + leftsize,ends)
   root = [starts + leftsize,l,r]
 
   return root
@@ -41,7 +76,7 @@ def rchild(num):
   return 2*num +2
 #return the binomial(q,i)
 def sumBino(k,q):
-  if q == 0:
+  if q == 0 or k == 0:
     return 1
   if q == 1 and k > 0:
     return 2
