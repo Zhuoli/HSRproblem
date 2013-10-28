@@ -1,10 +1,11 @@
+#!/usr/bin/python
 import sys
 import math
 import numpy 
 import networkx as nx
 import matplotlib.pyplot as plt
 import json
-  
+#calculate the jars needed given rungs and questions 
 def hsrNK(rungs,questions):
   if rungs == 1:
     return 0
@@ -16,45 +17,58 @@ def hsrNK(rungs,questions):
     if result < minn:
       minn = result
   return minn
-#calculate the highest value for rungs
+#calculate the highest value of rungs
 def hsrKQ(jars,questions):
   if jars == 0 or questions == 0:
     return 0
   return 1 + hsrKQ(jars - 1, questions - 1) + hsrKQ(jars, questions-1)
+##################  HOMEWORK 7  QUESTION 1 F #######################
 # calculate the minimum question may be asked for rung q, kars k
 def MinT(n,k):
-  s = numpy.zeros((n+1,k+1),dtype = numpy.int8)
-  m = numpy.zeros((n+1,k+1),dtype = numpy.int8)
-  if n ==0 or k == 0:
-    return 0,s
-  if k == 1:
-    for i in range(1,n+1):
-      s[i,1]=1
-    return n,s
-  for i in range(1,n+1):
-    m[i,1] = i
-    s[i,1] = 1
-  for i in range(1,n+1):
-    for j in range(2,k+1):
-      m[i,j] = sys.maxint
+  MAXIMUM = 65535
+  s = numpy.zeros((n+1,k+1),dtype = numpy.uint16)
+  m = numpy.zeros((n+1,k+1),dtype = numpy.uint16)
+  if n ==1 or k == 0:
+    return 0,s,m
+  for i in range(2,n+1):
+    m[i,0]=MAXIMUM
+  for i in range(2,n+1):
+    for j in range(1,k+1):
+      m[i,j] = MAXIMUM
       for a in range(1,i+1):
-        q = 1 + max(m[a-1,j-1],m[i-a,j])
+        q = 1 + max(m[a,j-1],m[i-a,j])
         if q < m[i,j]:
           m[i,j] = q
           s[i,j] = a
-  return int(m[i,j]),s
-
+  return m[i,j],s,m
+# optimizes the average case of q instad of the worst case
 def trace(n,k,s,start):
-  if k <= 0 or n <= 0:
+  if k <= 0 or n <= 1:
     return json.dumps({'h' : start})
   a = int(s[n,k]) + start 
-  return json.dumps([a,json.loads(trace(a-1,k-1,s,start)),json.loads(trace(n-a,k,s,a))])
+  return json.dumps([a,json.loads(trace(int(s[n,k]),k-1,s,start)),json.loads(trace(n-int(s[n,k]),k,s,a))])
 
 def jsonTrace(n,k,s):
-  return '{\"decision_tree\" : ' + trace(n,k,s,0) +'}'
+  return '{ \"decision_tree\" : ' + trace(n,k,s,0) +'}'
+def main(argv):
+  if len(argv) < 3:
+    print 'Usage:', argv[0], '<rungs number><jars number>'
+    sys.exit()
+  n = int(argv[1])
+  k = int(argv[2])
+  filename = 't-'+str(n)+'-'+str(k)+'.txt'
+  f = open(filename,'w+')
+  q,s,m = MinT(n,k)
+  strr = jsonTrace(n,k,s)
+  f.write(strr)
+  f.close()
+  print 'q for MinT(' + str(n) + ',' + str(k) +') is: ' + str(q)
+  print strr
 
+if __name__ == "__main__":
+  main(sys.argv)
 
-
+#################    I AM BEAUTIFUL CUTTING LINE ###########################
 #Build the highest rungs tree given jars and questions
 def HSRkqStruct(jars,questions):
   maxs = sumBino(jars,questions)
